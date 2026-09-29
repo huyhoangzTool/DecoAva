@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DecoAva - Discord Avatar Decoration Generator</title>
+  
+  <!-- Font Cherry Cream Soda & Apple Font Style -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cherry+Cream+Soda&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Cropper.js CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-weight: 700;
+      background-color: #050508;
+      color: #ffffff;
+      overflow-x: hidden;
+    }
+
+    .font-cherry {
+      font-family: 'Cherry Cream Soda', cursive;
+    }
+
+    /* Smoke Background Effect */
+    .smoke-bg {
+      background: radial-gradient(circle at 50% 30%, #1a0814 0%, #080306 60%, #030104 100%);
+      position: relative;
+    }
+
+    .smoke-bg::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: radial-gradient(circle at 20% 80%, rgba(255, 105, 180, 0.08) 0%, transparent 50%),
+                  radial-gradient(circle at 80% 20%, rgba(255, 182, 193, 0.06) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    /* Sakura Petals Animation */
+    .sakura-container {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      overflow: hidden;
+    }
+
+    .petal {
+      position: absolute;
+      background: linear-gradient(135deg, #ffb7c5, #ff69b4);
+      border-radius: 150% 0 150% 0;
+      opacity: 0.7;
+      animation: fall linear infinite;
+    }
+
+    @keyframes fall {
+      0% {
+        transform: translateY(-10vh) rotate(0deg) scale(0.8);
+        opacity: 0;
+      }
+      10% { opacity: 0.8; }
+      90% { opacity: 0.8; }
+      100% {
+        transform: translateY(105vh) rotate(360deg) scale(1.2);
+        opacity: 0;
+      }
+    }
+
+    /* Animated RGB Text */
+    .rgb-text {
+      background: linear-gradient(90deg, #ff007f, #ff75c3, #00f0ff, #ff007f);
+      background-size: 300% 300%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: rgbAnimation 4s ease infinite;
+    }
+
+    @keyframes rgbAnimation {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* Pulse Glow Animation for ZaloPay Icon */
+    .zalopay-glow {
+      animation: zalopayPulse 2s infinite ease-in-out;
+    }
+
+    @keyframes zalopayPulse {
+      0% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(0, 168, 255, 0.4)); }
+      50% { transform: scale(1.1); filter: drop-shadow(0 0 12px rgba(0, 168, 255, 0.9)); }
+      100% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(0, 168, 255, 0.4)); }
+    }
+  </style>
+</head>
+<body class="smoke-bg min-h-screen flex flex-col justify-between items-center relative selection:bg-pink-500 selection:text-white">
+
+  <!-- Sakura Floating Container -->
+  <div class="sakura-container" id="sakuraContainer"></div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 hidden px-6 py-3 rounded-full text-black font-extrabold text-sm shadow-2xl transition-all duration-300 transform -translate-y-2"></div>
+
+  <!-- HEADER -->
+  <header class="w-full py-6 relative z-10 flex justify-center items-center border-b border-pink-950/30 backdrop-blur-sm">
+    <h1 class="font-cherry text-4xl sm:text-5xl text-pink-400 drop-shadow-[0_0_12px_rgba(244,114,182,0.6)] tracking-wider">
+      DecoAva
+    </h1>
+  </header>
+
+  <!-- CENTER CONTENT -->
+  <main class="w-full max-w-2xl px-4 py-8 flex flex-col items-center gap-8 relative z-10 my-auto">
+    
+    <!-- 1. Ô UPLOAD HÌNH VUÔNG TO THẨM MỸ -->
+    <div onclick="document.getElementById('fileInput').click()" 
+         class="w-80 h-80 sm:w-96 sm:h-96 border-2 border-dashed border-pink-500/40 hover:border-pink-400 rounded-3xl bg-black/40 hover:bg-pink-950/10 cursor-pointer flex flex-col items-center justify-center relative overflow-hidden group transition-all duration-300 shadow-[0_0_30px_rgba(0,0,0,0.8)] backdrop-blur-md">
+      
+      <input type="file" id="fileInput" accept="image/*,video/*" class="hidden" onchange="handleFileSelect(event)">
+      
+      <!-- Placeholder View -->
+      <div id="uploadPlaceholder" class="flex flex-col items-center gap-4 text-pink-300/80 group-hover:scale-105 transition-transform duration-300">
+        <svg class="w-16 h-16 stroke-current drop-shadow-[0_0_8px_rgba(244,114,182,0.4)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
+        </svg>
+        <span class="text-lg font-bold tracking-wide">Tải ảnh hoặc video lên</span>
+      </div>
+
+      <!-- Preview Image Layer (Che phủ 100% vừa khít hình vuông) -->
+      <img id="avatarPreview" class="hidden absolute inset-0 w-full h-full object-cover rounded-3xl" alt="Avatar Preview">
+    </div>
+
+    <!-- 2. Ô NHẬP LINK + NÚT DÁN -->
+    <div class="w-full max-w-lg flex items-center gap-2 bg-black/60 border border-pink-500/30 focus-within:border-pink-400 rounded-2xl px-4 py-3 shadow-lg backdrop-blur-md transition-all">
+      <input type="text" id="linkInput" 
+             placeholder="e.g: https://discord.com/shop#itemSkuId=13xx866xxx3631x27" 
+             class="w-full bg-transparent text-sm text-pink-100 placeholder-pink-300/30 focus:outline-none font-medium">
+      
+      <!-- Icon Nút Dán -->
+      <button onclick="pasteClipboard()" title="Dán link từ bộ nhớ tạm" class="p-2 text-pink-400 hover:text-pink-200 hover:bg-pink-500/20 rounded-xl transition-all flex-shrink-0">
+        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- 3. NÚT TẠO DECO -->
+    <button onclick="generateDeco()" class="w-full max-w-lg py-4 bg-gradient-to-r from-pink-600 to-pink-500 hover:from-pink-500 hover:to-pink-400 text-white font-extrabold text-lg rounded-2xl shadow-[0_0_20px_rgba(236,72,153,0.4)] hover:shadow-[0_0_30px_rgba(236,72,153,0.7)] active:scale-[0.98] transition-all duration-200">
+      Tạo Deco
+    </button>
+
+    <!-- 4. KHUNG CHỨA ẢNH DECO HOÀN THÀNH (Viền nét đứt) -->
+    <div id="resultContainer" class="hidden w-72 h-72 border-2 border-dashed border-pink-400/60 rounded-3xl bg-black/50 flex items-center justify-center p-4 relative shadow-[0_0_25px_rgba(0,0,0,0.9)] backdrop-blur-md">
+      <img id="resultImage" class="w-full h-full object-contain rounded-2xl" alt="Deco Result">
+    </div>
+
+    <!-- 5. NÚT TẢI XUỐNG (.GIF) -->
+    <button id="downloadBtn" onclick="downloadGif()" class="hidden px-8 py-3.5 bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-base rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.4)] active:scale-95 transition-all">
+      Tải xuống (.gif)
+    </button>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="w-full py-6 px-4 border-t border-pink-950/30 backdrop-blur-md relative z-10 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-pink-200/60 font-semibold">
+    
+    <!-- Nút Donate Me (Góc trái) -->
+    <button onclick="openDonateModal()" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold rounded-lg shadow-[0_0_10px_rgba(16,185,129,0.3)] transition-all active:scale-95">
+      Donate Me
+    </button>
+
+    <!-- Text Footer -->
+    <div class="flex flex-col items-center md:items-end gap-1 text-center md:text-right">
+      <div>© Huy Hoangz • https://decoava.netlify.app/ • https://bit.ly/decoava/</div>
+      <div class="text-pink-400 font-bold tracking-wider">KHÔNG CẦN ĐĂNG NHẬP - NHANH GỌN - DỄ DÀNG</div>
+    </div>
+  </footer>
+
+  <!-- POPUP CẮT ẢNH (CROPPER MODAL) -->
+  <div id="cropModal" class="fixed inset-0 bg-black/90 z-50 hidden flex flex-col items-center justify-center p-4 backdrop-blur-md">
+    <div class="max-w-md w-full bg-zinc-900 border border-pink-500/30 rounded-3xl p-5 flex flex-col items-center gap-4 shadow-2xl">
+      <h3 class="text-pink-300 font-bold text-lg">Cắt ảnh (Tỉ lệ 1:1)</h3>
+      <div class="w-full max-h-[60vh] overflow-hidden rounded-2xl bg-black">
+        <img id="cropImage" class="max-w-full" alt="To Crop">
+      </div>
+      <div class="flex w-full gap-3">
+        <button onclick="cancelCrop()" class="flex-1 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl transition-all">Hủy</button>
+        <button onclick="applyCrop()" class="flex-1 py-3 bg-pink-500 hover:bg-pink-400 text-black font-extrabold rounded-xl transition-all">Áp dụng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- POPUP DONATE QR -->
+  <div id="donateModal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white text-black w-full max-w-sm rounded-3xl p-6 flex flex-col items-center gap-4 relative shadow-2xl border-2 border-pink-500">
+      
+      <!-- Header Popup -->
+      <div class="w-full flex items-center justify-between pr-2">
+        <span class="rgb-text font-bold text-sm tracking-tight text-left">Donate để ủng hộ mình phát triển nhiều dự án hơn:3</span>
+        <button onclick="closeDonateModal()" class="text-zinc-500 hover:text-black font-black text-xl p-1">✕</button>
+      </div>
+
+      <!-- Mã QR -->
+      <img src="https://i.ibb.co/0Vqdbv2x/IMG-0305.jpg" alt="Donate QR Code" class="w-64 h-64 object-contain rounded-2xl border border-zinc-200 shadow-md">
+
+      <!-- Tên chủ tài khoản -->
+      <div style="font-family: 'Times New Roman', Times, serif;" class="font-bold text-lg text-black tracking-wide">
+        PHAN NGUYEN HUY HOANG
+      </div>
+
+      <!-- Tên ví điện tử & Icon ZaloPay To Đẹp -->
+      <div style="font-family: 'Times New Roman', Times, serif;" class="flex items-center gap-3 font-bold text-lg text-black">
+        <img src="https://i.ibb.co/Pzrtm5b7/IMG-0411.png" alt="ZaloPay Icon" class="w-12 h-12 object-contain zalopay-glow">
+        <span>Zalopay</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    // -------------------------------------------------------------
+    // F12 CONSOLE SIGNATURE (ĐẶT NỀN ĐEN VIỀN ĐỎ CHỮ ĐỎ TO RÕ NÉT)
+    // -------------------------------------------------------------
+    console.log(
+      '%cDiscord: youngxzsa',
+      'background: #000000; color: #ff2255; font-size: 22px; font-weight: 900; padding: 12px 24px; border: 3px solid #ff2255; border-radius: 10px; text-shadow: 0 0 10px rgba(255,34,85,0.8);'
+    );
+
+    // URL WORKER CLOUDFLARE BACKEND API CỦA BẠN
+    const WORKER_URL = 'https://decoava-api.yourname.workers.dev'; 
+
+    let cropper = null;
+    let userCroppedImage = null;
+    let generatedGifBlobUrl = null;
+
+    // 1. TẠO SAKURA PETALS
+    function createSakuraPetals() {
+      const container = document.getElementById('sakuraContainer');
+      const petalCount = 18;
+      for (let i = 0; i < petalCount; i++) {
+        const petal = document.createElement('div');
+        petal.className = 'petal';
+        const size = Math.random() * 10 + 8;
+        petal.style.width = `${size}px`;
+        petal.style.height = `${size * 1.4}px`;
+        petal.style.left = `${Math.random() * 100}%`;
+        petal.style.animationDuration = `${Math.random() * 6 + 6}s`;
+        petal.style.animationDelay = `${Math.random() * 5}s`;
+        container.appendChild(petal);
+      }
+    }
+    createSakuraPetals();
+
+    // 2. TOAST NOTIFICATION
+    function showToast(message, type = 'error') {
+      const toast = document.getElementById('toast');
+      toast.innerText = message;
+      toast.classList.remove('hidden', 'bg-red-500', 'bg-emerald-500');
+
+      if (type === 'error') {
+        toast.classList.add('bg-red-500'); // Nền đỏ chữ đen
+      } else {
+        toast.classList.add('bg-emerald-500'); // Nền xanh lá chữ đen
+      }
+
+      toast.classList.remove('-translate-y-2');
+      toast.classList.add('translate-y-0');
+
+      setTimeout(() => {
+        toast.classList.add('-translate-y-2');
+        setTimeout(() => toast.classList.add('hidden'), 300);
+      }, 3500);
+    }
+
+    // 3. XỬ LÝ UPLOAD & POPUP CẮT ẢNH
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const cropImage = document.getElementById('cropImage');
+        cropImage.src = e.target.result;
+
+        document.getElementById('cropModal').classList.remove('hidden');
+
+        if (cropper) cropper.destroy();
+        cropper = new Cropper(cropImage, {
+          aspectRatio: 1,
+          viewMode: 1,
+          minCropBoxWidth: 128,
+          minCropBoxHeight: 128,
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function cancelCrop() {
+      document.getElementById('cropModal').classList.add('hidden');
+      if (cropper) cropper.destroy();
+      document.getElementById('fileInput').value = '';
+    }
+
+    function applyCrop() {
+      if (!cropper) return;
+      const canvas = cropper.getCroppedCanvas({
+        width: 512,
+        height: 512,
+      });
+
+      userCroppedImage = canvas.toDataURL('image/png');
+
+      // Hiển thị ảnh vừa cắt lấp đầy 100% ô upload vuông
+      const previewImg = document.getElementById('avatarPreview');
+      previewImg.src = userCroppedImage;
+      previewImg.classList.remove('hidden');
+      document.getElementById('uploadPlaceholder').classList.add('hidden');
+
+      cancelCrop();
+    }
+
+    // 4. CHỨC NĂNG NÚT DÁN (CLIPBOARD)
+    async function pasteClipboard() {
+      try {
+        const text = await navigator.clipboard.readText();
+        if (text) {
+          document.getElementById('linkInput').value = text.trim();
+        }
+      } catch (err) {
+        showToast('Hãy nhấn giữ vào ô nhập để dán trực tiếp!', 'error');
+      }
+    }
+
+    // 5. TẠO DECO QUA CLOUDFLARE WORKER API & CANVAS
+    async function generateDeco() {
+      const linkInput = document.getElementById('linkInput').value.trim();
+
+      if (!userCroppedImage) {
+        showToast('File ảnh, video không phù hợp!', 'error');
+        return;
+      }
+
+      showToast('Đang tạo Deco, xin đợi một chútt…', 'success');
+
+      try {
+        const response = await fetch(WORKER_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            skuLink: linkInput,
+            avatarBase64: userCroppedImage
+          })
+        });
+
+        const resData = await response.json();
+
+        if (!response.ok || !resData.success) {
+          showToast(resData.error || 'Sai định dạng link/Link hết hạn/File ảnh, video không phù hợp!', 'error');
+          return;
+        }
+
+        // Ghép Deco CDN từ Worker với Avatar User
+        renderDecoToCanvas(userCroppedImage, resData.decoUrl);
+
+      } catch (e) {
+        showToast('Sai định dạng link/Link hết hạn/File ảnh, video không phù hợp!', 'error');
+      }
+    }
+
+    function renderDecoToCanvas(avatarSrc, decoUrl) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+
+      const avatarImg = new Image();
+      avatarImg.crossOrigin = 'anonymous';
+      
+      const decoImg = new Image();
+      decoImg.crossOrigin = 'anonymous';
+
+      avatarImg.onload = () => {
+        decoImg.onload = () => {
+          ctx.clearRect(0, 0, 512, 512);
+
+          // Draw Rounded Avatar
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(256, 256, 215, 0, Math.PI * 2);
+          ctx.closePath();
+          ctx.clip();
+          ctx.drawImage(avatarImg, 41, 41, 430, 430);
+          ctx.restore();
+
+          // Draw Deco Frame
+          ctx.drawImage(decoImg, 0, 0, 512, 512);
+
+          const resultImg = document.getElementById('resultImage');
+          generatedGifBlobUrl = canvas.toDataURL('image/png');
+          resultImg.src = generatedGifBlobUrl;
+
+          document.getElementById('resultContainer').classList.remove('hidden');
+          document.getElementById('downloadBtn').classList.remove('hidden');
+
+          showToast('Tạo Deco thành công!', 'success');
+        };
+        decoImg.src = decoUrl;
+      };
+      avatarImg.src = avatarSrc;
+    }
+
+    // 6. DOWNLOAD (.GIF)
+    function downloadGif() {
+      if (!generatedGifBlobUrl) return;
+      const a = document.createElement('a');
+      a.href = generatedGifBlobUrl;
+      a.download = 'DecoAva_Discord.gif';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    // 7. DONATE MODAL
+    function openDonateModal() {
+      document.getElementById('donateModal').classList.remove('hidden');
+    }
+
+    function closeDonateModal() {
+      document.getElementById('donateModal').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
